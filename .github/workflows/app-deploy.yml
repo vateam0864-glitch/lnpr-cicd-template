@@ -1,0 +1,37 @@
+name: Deploy App
+
+on:
+  push:
+    paths-ignore:
+      - "cv_package/**"
+
+jobs:
+  deploy-app:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      # Login to GHCR with your Personal Access Token
+      - name: Login to GHCR
+        run: |
+          echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u vateam0864-glitch --password-stdin
+
+      # Build and tag Docker image
+      - name: Build app image
+        run: |
+          docker build -t lnpr-app:latest ./app
+          docker tag lnpr-app:latest ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
+
+      # Push image to GHCR
+      - name: Push image to GHCR
+        run: docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
+
+      # Deploy on EC2 via SSH
+      - name: Deploy on EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo bash /opt/deploy/deploy_app.sh

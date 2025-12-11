@@ -1,0 +1,3 @@
+app_name: lnpr-app
+package_required: v1
+docker_image: ghcr.io/vateam0864-glitch/lnpr-app:latest

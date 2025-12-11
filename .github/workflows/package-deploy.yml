@@ -1,0 +1,25 @@
+name: Deploy CV Package
+
+on:
+  push:
+    paths:
+      - "cv_package/**"
+
+jobs:
+  deploy-package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Build package
+        run: bash cv_package/build_package.sh
+
+      - name: Copy package to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "cv_package/cvpack_v1.tar.gz"
+          target: "/opt/lnpr/"
+
