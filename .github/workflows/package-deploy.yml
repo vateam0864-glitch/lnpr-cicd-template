@@ -6,20 +6,25 @@ on:
       - "cv_package/**"
 
 jobs:
-  deploy-package:
+  build-and-upload:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v3
 
-      - name: Build package
-        run: bash cv_package/build_package.sh
+      # Run the script to build the package
+      - name: Build CV Package
+        run: |
+          chmod +x cv_package/build_package.sh
+          ./cv_package/build_package.sh
+          ls -l
 
-      - name: Copy package to EC2
+      # Upload TAR file to EC2
+      - name: Upload CV Package to EC2
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "cv_package/cvpack_v1.tar.gz"
+          source: "cvpack_v1.tar.gz"
           target: "/opt/lnpr/"
-
