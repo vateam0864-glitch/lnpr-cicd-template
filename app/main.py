@@ -50,6 +50,8 @@ def home():
             Correct package version · CI/CD working · Updated version · Added 2 lines
           </div>
           <div class="time">Current server time: {current_dt}</div>
+                    <div class="title">LNPR end of the line ✅</div>
+
         </div>
       </body>
     </html>
@@ -58,3 +60,4 @@ def home():
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
+#
