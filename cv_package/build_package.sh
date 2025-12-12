@@ -2,5 +2,5 @@
 VERSION=v1
 PACKAGE_DIR="package_${VERSION}"
 
-tar -czf cvpack_${VERSION}.tar.gz $PACKAGE_DIR
+tar -czf cvpack_${VERSION}.tar.gz -C cv_package $PACKAGE_DIR
 echo "Built CV package version: $VERSION"
