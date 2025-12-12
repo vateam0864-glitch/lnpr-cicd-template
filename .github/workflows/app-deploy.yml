@@ -2,8 +2,10 @@ name: Deploy App
 
 on:
   push:
+    branches:
+      - main              # 🚀 Trigger ONLY on main branch
     paths:
-      - "app/**"        # Trigger ONLY when application code changes
+      - "app/**"          # Only when application code changes
       - ".github/workflows/app-deploy.yml"
 
 jobs:

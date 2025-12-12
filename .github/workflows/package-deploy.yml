@@ -2,8 +2,11 @@ name: Deploy CV Package
 
 on:
   push:
+    branches:
+      - main                # 🚀 Trigger ONLY on main branch
     paths:
-      - "cv_package/**"
+      - "cv_package/**"      # Only run when package files change
+      - ".github/workflows/package-deploy.yml"
 
 jobs:
   build-and-upload:
@@ -12,7 +15,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Run the script to build the package
+      # Build the CV Package
       - name: Build CV Package
         run: |
           chmod +x cv_package/build_package.sh
