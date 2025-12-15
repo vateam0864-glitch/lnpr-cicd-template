@@ -13,35 +13,54 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      # Build package (tar)
+      # ------------------------------------------------------
+      # BUILD PACKAGE (tar.gz)
+      # ------------------------------------------------------
       - name: Build CV Package
         run: |
           chmod +x cv_package/build_package.sh
           ./cv_package/build_package.sh
-          ls -l
+          ls -lh
 
-      # Step: Select server(s)
-      - name: Select Target Servers
+      # ------------------------------------------------------
+      # SELECT SERVERS BASED ON COMMIT MESSAGE
+      # ------------------------------------------------------
+      - name: Select Target Servers (via commit message)
         id: server_select
         run: |
-          HOSTS="${{ secrets.EC2_HOST }}"
-          TARGET="${{ secrets.TARGET_SERVER }}"
+          HOSTS="${{ secrets.EC2_HOST }}"   # Example: 51.20.251.59,13.48.105.140
+          MSG="${{ github.event.head_commit.message }}"
 
-          if [ "$TARGET" = "all" ]; then
-            SELECTED="$HOSTS"
-          elif [ "$TARGET" = "server1" ]; then
+          echo "Commit msg: $MSG"
+
+          if echo "$MSG" | grep -qi "server1"; then
+            echo "Deploying to SERVER 1"
             SELECTED=$(echo "$HOSTS" | cut -d',' -f1)
-          elif [ "$TARGET" = "server2" ]; then
+
+          elif echo "$MSG" | grep -qi "server2"; then
+            echo "Deploying to SERVER 2"
             SELECTED=$(echo "$HOSTS" | cut -d',' -f2)
+
+          elif echo "$MSG" | grep -qi "all"; then
+            echo "Deploying to ALL servers"
+            SELECTED="$HOSTS"
+
           else
-            echo "Invalid TARGET_SERVER: $TARGET"
+            echo "❌ ERROR: No server selection found in commit message."
+            echo "Use one of these tags:"
+            echo "  (server1)"
+            echo "  (server2)"
+            echo "  (all)"
             exit 1
           fi
 
+          echo "Selected Hosts: $SELECTED"
           echo "SELECTED_HOSTS=$SELECTED" >> $GITHUB_OUTPUT
 
-      # Upload package tar to selected servers
-      - name: Upload CV Package (multi-server)
+      # ------------------------------------------------------
+      # UPLOAD PACKAGE TAR TO EC2 SERVERS
+      # ------------------------------------------------------
+      - name: Upload CV Package to Selected EC2 Servers
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ steps.server_select.outputs.SELECTED_HOSTS }}
@@ -50,8 +69,10 @@ jobs:
           source: "cvpack_v1.tar.gz"
           target: "/opt/lnpr/"
 
-      # Run deploy_package.sh on selected servers
-      - name: Apply CV Package on EC2
+      # ------------------------------------------------------
+      # RUN PACKAGE DEPLOY SCRIPT
+      # ------------------------------------------------------
+      - name: Apply CV Package on Servers
         uses: appleboy/ssh-action@v1.1.0
         with:
           host: ${{ steps.server_select.outputs.SELECTED_HOSTS }}
