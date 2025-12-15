@@ -42,7 +42,7 @@ jobs:
           elif [ "$TARGET" = "server2" ]; then
             SELECTED=$(echo "$HOSTS" | cut -d',' -f2)
           else
-            echo "Invalid TARGET_SERVER value: $TARGET"
+            echo "Invalid TARGET_SERVER value: $TARGETModify ONLY the SSH deploy step:"
             exit 1
           fi
 
