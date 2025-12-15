@@ -1,7 +1,5 @@
 from flask import Flask
 from datetime import datetime
-import requests
-import json
 
 app = Flask(__name__)
 
@@ -9,22 +7,7 @@ app = Flask(__name__)
 def home():
     now = datetime.now()
     current_dt = now.strftime("%Y-%m-%d %H:%M:%S")
-    
-    # Fetch Coimbatore weather (lat: 11.0168, lon: 76.9558)
-    try:
-        weather_url = "https://api.open-meteo.com/v1/forecast?latitude=11.0168&longitude=76.9558&current_weather=true&temperature_unit=fahrenheit&wind_speed_unit=kmh&precipitation_unit=mm"
-        response = requests.get(weather_url, timeout=5)
-        weather_data = response.json()
-        current_weather = weather_data['current']
-        temp_c = round((current_weather['temperature_2m'] - 32) * 5/9, 1)
-        wind_speed = current_weather['windspeed_10m']
-        precip = current_weather['precipitation']
-        weather_status = "Clear" if precip == 0 else f"{precip}mm rain"
-    except:
-        temp_c = "N/A"
-        wind_speed = "N/A"
-        weather_status = "Unavailable"
-    
+
     html = f"""
     <html>
       <head>
@@ -58,30 +41,15 @@ def home():
             color: #03a9f4;
             font-size: 16px;
           }}
-          .weather {{
-            color: #9c27b0;
-            font-size: 16px;
-            margin-top: 16px;
-            padding: 12px;
-            background: rgba(156, 39, 176, 0.1);
-            border-radius: 6px;
-            border-left: 4px solid #9c27b0;
-          }}
         </style>
       </head>
       <body>
         <div class="card">
-          <div class="title">LNPR App Running ✅</div>
+          <div class="title">LNPR App Running 1234 ✅</div>
           <div class="subtitle">
             Correct package version · CI/CD working · Updated version · Added 2 lines
           </div>
           <div class="time">Current server time: {current_dt}</div>
-          
-          <div class="weather">
-            🌤️ Coimbatore Weather: {temp_c}°C, Wind: {wind_speed}km/h, {weather_status}
-          </div>
-          
-          <div class="title">LNPR end of the line ✅ + 1 line added +2 line added</div>
         </div>
       </body>
     </html>
