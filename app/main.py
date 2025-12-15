@@ -50,7 +50,7 @@ def home():
             Correct package version · CI/CD working · Updated version · Added 2 lines
           </div>
           <div class="time">Current server time: {current_dt}</div>
-                    <div class="title">LNPRd endd of the line hello✅ +  dline added +2 line added, hello+3 kline </div>
+                    <div class="title">LNPRd end of the line hello✅ +  dline added +2 line added, hello+3 kline </div>
 
         </div>
       </body>
