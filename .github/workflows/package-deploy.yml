@@ -20,21 +20,41 @@ jobs:
           ./cv_package/build_package.sh
           ls -l
 
-      # Upload package to server(s)
+      # Step: Select server(s)
+      - name: Select Target Servers
+        id: server_select
+        run: |
+          HOSTS="${{ secrets.EC2_HOST }}"
+          TARGET="${{ secrets.TARGET_SERVER }}"
+
+          if [ "$TARGET" = "all" ]; then
+            SELECTED="$HOSTS"
+          elif [ "$TARGET" = "server1" ]; then
+            SELECTED=$(echo "$HOSTS" | cut -d',' -f1)
+          elif [ "$TARGET" = "server2" ]; then
+            SELECTED=$(echo "$HOSTS" | cut -d',' -f2)
+          else
+            echo "Invalid TARGET_SERVER: $TARGET"
+            exit 1
+          fi
+
+          echo "SELECTED_HOSTS=$SELECTED" >> $GITHUB_OUTPUT
+
+      # Upload package tar to selected servers
       - name: Upload CV Package (multi-server)
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.TARGET_SERVER == 'all' && secrets.EC2_HOSTS || secrets.TARGET_SERVER }}
+          host: ${{ steps.server_select.outputs.SELECTED_HOSTS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "cvpack_v1.tar.gz"
           target: "/opt/lnpr/"
 
-      # Run deploy_package.sh on servers
+      # Run deploy_package.sh on selected servers
       - name: Apply CV Package on EC2
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.TARGET_SERVER == 'all' && secrets.EC2_HOSTS || secrets.TARGET_SERVER }}
+          host: ${{ steps.server_select.outputs.SELECTED_HOSTS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |

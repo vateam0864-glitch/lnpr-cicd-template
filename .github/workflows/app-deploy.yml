@@ -28,11 +28,31 @@ jobs:
       - name: Push image to GHCR
         run: docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-      # Deploy to EC2(s)
-      - name: Deploy App on EC2 (multi-server)
+      # Step: Select server(s)
+      - name: Select Target Servers
+        id: server_select
+        run: |
+          HOSTS="${{ secrets.EC2_HOST }}"
+          TARGET="${{ secrets.TARGET_SERVER }}"
+
+          if [ "$TARGET" = "all" ]; then
+            SELECTED="$HOSTS"
+          elif [ "$TARGET" = "server1" ]; then
+            SELECTED=$(echo "$HOSTS" | cut -d',' -f1)
+          elif [ "$TARGET" = "server2" ]; then
+            SELECTED=$(echo "$HOSTS" | cut -d',' -f2)
+          else
+            echo "Invalid TARGET_SERVER value: $TARGET"
+            exit 1
+          fi
+
+          echo "SELECTED_HOSTS=$SELECTED" >> $GITHUB_OUTPUT
+
+      # Deploy on selected servers
+      - name: Deploy App on Selected EC2 Servers
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.TARGET_SERVER == 'all' && secrets.EC2_HOSTS || secrets.TARGET_SERVER }}
+          host: ${{ steps.server_select.outputs.SELECTED_HOSTS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
