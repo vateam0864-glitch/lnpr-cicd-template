@@ -4,27 +4,38 @@ on:
   push:
     paths:
       - "cv_package/**"
+      - ".github/workflows/package-deploy.yml"
 
 jobs:
-  build-and-upload:
+  deploy-package:
     runs-on: ubuntu-latest
 
     steps:
       - uses: actions/checkout@v3
 
-      # Run the script to build the package
+      # Build CV Package
       - name: Build CV Package
         run: |
           chmod +x cv_package/build_package.sh
           ./cv_package/build_package.sh
           ls -l
 
-      # Upload TAR file to EC2
-      - name: Upload CV Package to EC2
+      # Upload TAR to EC2 servers
+      - name: Upload Package to EC2 (multi-server)
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.TARGET_SERVER != '' && secrets.TARGET_SERVER || secrets.EC2_HOSTS }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
           source: "cvpack_v1.tar.gz"
           target: "/opt/lnpr/"
+
+      # Run deploy_package.sh on each server
+      - name: Apply Package on EC2
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.TARGET_SERVER != '' && secrets.TARGET_SERVER || secrets.EC2_HOSTS }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo bash /opt/deploy/deploy_package.sh
