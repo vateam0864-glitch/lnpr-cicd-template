@@ -32,16 +32,22 @@ jobs:
       - name: Select Target Servers
         id: select
         run: |
-          if [ "${{ secrets.TARGET_SERVER }}" = "server1" ]; then
-            echo "HOSTS=${{ secrets.SERVER1_IP }}" >> $GITHUB_OUTPUT
-          elif [ "${{ secrets.TARGET_SERVER }}" = "server2" ]; then
-            echo "HOSTS=${{ secrets.SERVER2_IP }}" >> $GITHUB_OUTPUT
-          elif [ "${{ secrets.TARGET_SERVER }}" = "all" ]; then
-            echo "HOSTS=${{ secrets.SERVER1_IP }},${{ secrets.SERVER2_IP }}" >> $GITHUB_OUTPUT
+          SERVER1="${{ secrets.SERVER1_IP }}"
+          SERVER2="${{ secrets.SERVER2_IP }}"
+          TARGET="${{ secrets.TARGET_SERVER }}"
+
+          if [ "$TARGET" = "all" ]; then
+            HOSTS="$SERVER1,$SERVER2"
+          elif [ "$TARGET" = "server1" ]; then
+            HOSTS="$SERVER1"
+          elif [ "$TARGET" = "server2" ]; then
+            HOSTS="$SERVER2"
           else
-            echo "Invalid TARGET_SERVER value"
+            echo "Invalid TARGET_SERVER value: $TARGET"
             exit 1
           fi
+
+          echo "HOSTS=$HOSTS" >> $GITHUB_OUTPUT
 
       # Deploy
       - name: Deploy to Selected Servers
