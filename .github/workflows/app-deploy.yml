@@ -10,51 +10,55 @@ jobs:
   deploy-app:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
+    # Make secrets available as env (avoids VS Code errors)
+    env:
+      TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
-      # Login to GHCR
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # ----------------------------
+      # Login to GitHub Container Registry
+      # ----------------------------
       - name: Login to GHCR
         run: |
-          echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u vateam0864-glitch --password-stdin
+          echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u vateam0864-glitch --password-stdin
 
-      # Build App Image
-      - name: Build app image
+      # ----------------------------
+      # Build & Push Docker Image
+      # ----------------------------
+      - name: Build App Image
         run: |
           docker build -t lnpr-app:latest ./app
           docker tag lnpr-app:latest ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-      # Push Image
-      - name: Push image to GHCR
-        run: docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
-
-      # Decide target servers
-      - name: Select Target Servers
-        id: select
+      - name: Push Image to GHCR
         run: |
-          SERVER1="${{ secrets.SERVER1_IP }}"
-          SERVER2="${{ secrets.SERVER2_IP }}"
-          TARGET="${{ secrets.TARGET_SERVER }}"
+          docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-          if [ "$TARGET" = "all" ]; then
-            HOSTS="$SERVER1,$SERVER2"
-          elif [ "$TARGET" = "server1" ]; then
-            HOSTS="$SERVER1"
-          elif [ "$TARGET" = "server2" ]; then
-            HOSTS="$SERVER2"
-          else
-            echo "Invalid TARGET_SERVER value: $TARGET"
-            exit 1
-          fi
-
-          echo "HOSTS=$HOSTS" >> $GITHUB_OUTPUT
-
-      # Deploy
-      - name: Deploy to Selected Servers
+      # ============================
+      # Deploy to SERVER 1
+      # ============================
+      - name: Deploy to Server 1
+        if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ steps.select.outputs.HOSTS }}
+          host: ${{ secrets.SERVER1_IP }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
+          script: |
+            sudo bash /opt/deploy/deploy_app.sh
+
+      # ============================
+      # Deploy to SERVER 2
+      # ============================
+      - name: Deploy to Server 2
+        if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SERVER2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
           script: |
             sudo bash /opt/deploy/deploy_app.sh

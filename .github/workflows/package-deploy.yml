@@ -10,53 +10,64 @@ jobs:
   deploy-package:
     runs-on: ubuntu-latest
 
-    steps:
-      - uses: actions/checkout@v3
+    env:
+      TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
-      # Build package (tar)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # ----------------------------
+      # Build CV Package
+      # ----------------------------
       - name: Build CV Package
         run: |
           chmod +x cv_package/build_package.sh
           ./cv_package/build_package.sh
-          ls -l
+          ls -lh cvpack_v1.tar.gz
 
-      # Decide target servers
-      - name: Select Target Servers
-        id: select
-        run: |
-          SERVER1="${{ secrets.SERVER1_IP }}"
-          SERVER2="${{ secrets.SERVER2_IP }}"
-          TARGET="${{ secrets.TARGET_SERVER }}"
-
-          if [ "$TARGET" = "all" ]; then
-            HOSTS="$SERVER1,$SERVER2"
-          elif [ "$TARGET" = "server1" ]; then
-            HOSTS="$SERVER1"
-          elif [ "$TARGET" = "server2" ]; then
-            HOSTS="$SERVER2"
-          else
-            echo "Invalid TARGET_SERVER value: $TARGET"
-            exit 1
-          fi
-
-          echo "HOSTS=$HOSTS" >> $GITHUB_OUTPUT
-
-      # Upload package tar to selected servers
-      - name: Upload CV Package
+      # ============================
+      # SERVER 1 – Upload Package
+      # ============================
+      - name: Upload CV Package to Server 1
+        if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ steps.select.outputs.HOSTS }}
+          host: ${{ secrets.SERVER1_IP }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
           source: "cvpack_v1.tar.gz"
           target: "/opt/lnpr/"
 
-      # Run deploy script
-      - name: Apply CV Package on EC2
+      - name: Apply CV Package on Server 1
+        if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ steps.select.outputs.HOSTS }}
+          host: ${{ secrets.SERVER1_IP }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
+          script: |
+            sudo bash /opt/deploy/deploy_package.sh
+
+      # ============================
+      # SERVER 2 – Upload Package
+      # ============================
+      - name: Upload CV Package to Server 2
+        if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
+          source: "cvpack_v1.tar.gz"
+          target: "/opt/lnpr/"
+
+      - name: Apply CV Package on Server 2
+        if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SERVER2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
           script: |
             sudo bash /opt/deploy/deploy_package.sh
