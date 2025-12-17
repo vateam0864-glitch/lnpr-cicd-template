@@ -10,36 +10,28 @@ jobs:
   deploy-app:
     runs-on: ubuntu-latest
 
-    # Make secrets available as env (avoids VS Code errors)
     env:
       TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      # ----------------------------
-      # Login to GitHub Container Registry
-      # ----------------------------
+      # Login to GHCR
       - name: Login to GHCR
         run: |
           echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u vateam0864-glitch --password-stdin
 
-      # ----------------------------
-      # Build & Push Docker Image
-      # ----------------------------
-      - name: Build App Image
+      # Build Image
+      - name: Build app image
         run: |
           docker build -t lnpr-app:latest ./app
           docker tag lnpr-app:latest ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-      - name: Push Image to GHCR
-        run: |
-          docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
+      # Push Image
+      - name: Push image
+        run: docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-      # ============================
-      # Deploy to SERVER 1
-      # ============================
+      # ================= SERVER 1 =================
       - name: Deploy to Server 1
         if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
@@ -50,9 +42,7 @@ jobs:
           script: |
             sudo bash /opt/deploy/deploy_app.sh
 
-      # ============================
-      # Deploy to SERVER 2
-      # ============================
+      # ================= SERVER 2 =================
       - name: Deploy to Server 2
         if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
