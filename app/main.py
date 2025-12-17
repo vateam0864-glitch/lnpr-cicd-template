@@ -45,7 +45,7 @@ def home():
       </head>
       <body>
         <div class="card">
-          <div class="title">LNPR App Runningdd ✅</div>
+          <div class="title">LNPR App Runningddd ✅</div>
           <div class="subtitle">
             Correct package version · CI/CD working · Updated version · Added 2 lines
           </div>
