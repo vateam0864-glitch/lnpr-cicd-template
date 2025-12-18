@@ -5,12 +5,15 @@ on:
     branches:
       - main              # 🚀 Trigger ONLY on main branch
     paths:
-      - "app/**"          # Only when application code changes
+      - "app/**"
       - ".github/workflows/app-deploy.yml"
 
 jobs:
   deploy-app:
     runs-on: ubuntu-latest
+
+    env:
+      TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
     steps:
       - uses: actions/checkout@v3
@@ -18,24 +21,36 @@ jobs:
       # Login to GHCR
       - name: Login to GHCR
         run: |
-          echo ${{ secrets.CR_PAT }} | docker login ghcr.io -u vateam0864-glitch --password-stdin
+          echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u vateam0864-glitch --password-stdin
 
-      # Build and Tag Docker Image
+      # Build Image
       - name: Build app image
         run: |
           docker build -t lnpr-app:latest ./app
           docker tag lnpr-app:latest ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-      # Push Image to GHCR
-      - name: Push image to GHCR
+      # Push Image
+      - name: Push image
         run: docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
-      # Deploy on EC2
-      - name: Deploy on EC2
+      # ================= SERVER 1 =================
+      - name: Deploy to Server 1
+        if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.SERVER1_IP }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
+          script: |
+            sudo bash /opt/deploy/deploy_app.sh
+
+      # ================= SERVER 2 =================
+      - name: Deploy to Server 2
+        if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SERVER2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
           script: |
             sudo bash /opt/deploy/deploy_app.sh

@@ -5,29 +5,43 @@ on:
     branches:
       - main                # 🚀 Trigger ONLY on main branch
     paths:
-      - "cv_package/**"      # Only run when package files change
+      - "cv_package/**"
       - ".github/workflows/package-deploy.yml"
 
 jobs:
-  build-and-upload:
+  deploy-package:
     runs-on: ubuntu-latest
+
+    env:
+      TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
     steps:
       - uses: actions/checkout@v3
 
-      # Build the CV Package
       - name: Build CV Package
         run: |
           chmod +x cv_package/build_package.sh
           ./cv_package/build_package.sh
-          ls -l
+          ls -lh cvpack_v1.tar.gz
 
-      # Upload TAR file to EC2
-      - name: Upload CV Package to EC2
+      # ---------------- SERVER 2 ----------------
+      - name: Upload CV Package to Server 2
+        if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
         uses: appleboy/scp-action@v0.1.7
         with:
-          host: ${{ secrets.EC2_HOST }}
+          host: ${{ secrets.SERVER2_IP }}
           username: ubuntu
-          key: ${{ secrets.EC2_SSH_KEY }}
+          key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
           source: "cvpack_v1.tar.gz"
           target: "/opt/lnpr/"
+          overwrite: true
+
+      - name: Apply CV Package on Server 2
+        if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SERVER2_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
+          script: |
+            sudo bash /opt/deploy/deploy_package.sh
