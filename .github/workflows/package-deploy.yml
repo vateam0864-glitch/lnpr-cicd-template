@@ -2,6 +2,8 @@ name: Deploy CV Package
 
 on:
   push:
+    branches:
+      - main                # 🚀 Trigger ONLY on main branch
     paths:
       - "cv_package/**"
       - ".github/workflows/package-deploy.yml"
