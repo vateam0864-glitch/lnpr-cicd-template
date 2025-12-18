@@ -1,0 +1,18 @@
+version: "3.8"
+
+services:
+  lnpr:
+    image: ghcr.io/vateam0864-glitch/lnpr-cid-template:${LNPR_VERSION:-latest}
+    container_name: lnpr-app
+    restart: always
+
+    ports:
+      - "5000:5000"
+
+    volumes:
+      - ../config/terrace.json:/app/terrace.json
+      - ../data/logs:/app/logs
+      - ../data/images:/app/images
+
+    env_file:
+      - ../config/env.conf

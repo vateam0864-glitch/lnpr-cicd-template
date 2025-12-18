@@ -1,15 +1,34 @@
 #!/bin/bash
+set -e
 
-MANIFEST="/opt/lnpr/manifest.yaml"
+echo "=============================="
+echo " LNPR APP DEPLOY STARTED"
+echo "=============================="
 
-PKG=$(grep 'package_required:' "$MANIFEST" | awk '{print $2}')
+APP_DIR="/opt/lnpr/docker"
+IMAGE="ghcr.io/vateam0864-glitch/lnpr-cid-template"
+DEFAULT_TAG="latest"
 
-if [ ! -d "/opt/cvpack/$PKG" ]; then
-    echo "Installing missing package $PKG..."
-    tar -xzf /opt/lnpr/cvpack_${PKG}.tar.gz -C /opt/cvpack/$PKG --strip-components=1
+# Optional: allow version override from manifest
+if [ -f /opt/lnpr/manifest.yaml ]; then
+  VERSION=$(grep -E '^app_version:' /opt/lnpr/manifest.yaml | awk '{print $2}')
+else
+  VERSION="$DEFAULT_TAG"
 fi
 
-docker stop lnpr-app || true
-docker rm lnpr-app || true
+echo "Using image version: $VERSION"
 
-docker run -d --name lnpr-app -p 5000:5000 ghcr.io/vateam0864-glitch/lnpr-app:latest
+cd $APP_DIR
+
+echo "Pulling latest image..."
+docker pull ${IMAGE}:${VERSION}
+
+echo "Stopping existing containers..."
+docker compose down || true
+
+echo "Starting LNPR services..."
+LNPR_VERSION=$VERSION docker compose up -d
+
+echo "=============================="
+echo " LNPR APP DEPLOY COMPLETED"
+echo "=============================="
