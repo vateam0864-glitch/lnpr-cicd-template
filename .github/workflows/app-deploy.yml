@@ -3,7 +3,7 @@ name: Deploy App
 on:
   push:
     paths:
-      - "app/**"
+      - "lnpr/**"
       - ".github/workflows/app-deploy.yml"
 
 jobs:
@@ -14,22 +14,34 @@ jobs:
       TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
+      # ----------------------------
       # Login to GHCR
+      # ----------------------------
       - name: Login to GHCR
         run: |
           echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u vateam0864-glitch --password-stdin
 
-      # Build Image
-      - name: Build app image
+      # ----------------------------
+      # Build Image (CORRECT PATH)
+      # ----------------------------
+      - name: Build LNPR image
         run: |
-          docker build -t lnpr-app:latest ./app
+          docker build \
+            -t lnpr-app:latest \
+            -f lnpr/docker/Dockerfile \
+            lnpr
+
           docker tag lnpr-app:latest ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
+      # ----------------------------
       # Push Image
-      - name: Push image
-        run: docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
+      # ----------------------------
+      - name: Push image to GHCR
+        run: |
+          docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
 
       # ================= SERVER 1 =================
       - name: Deploy to Server 1
