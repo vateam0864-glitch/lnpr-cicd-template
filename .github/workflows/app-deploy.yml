@@ -10,40 +10,46 @@ jobs:
   deploy-app:
     runs-on: ubuntu-latest
 
+    # =========================
+    # GLOBAL VARIABLES (TL WANTED THIS)
+    # =========================
     env:
       TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
+      IMAGE_NAME: ghcr.io/vateam0864-glitch/lnpr-cicd-template
+      IMAGE_TAG: latest
+      CONTAINER_NAME: lnpr-app
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      # ----------------------------
-      # Login to GHCR
-      # ----------------------------
+      # =========================
+      # LOGIN TO GHCR
+      # =========================
       - name: Login to GHCR
         run: |
           echo "${{ secrets.CR_PAT }}" | docker login ghcr.io -u vateam0864-glitch --password-stdin
 
-      # ----------------------------
-      # Build Image (CORRECT PATH)
-      # ----------------------------
-      - name: Build LNPR image
+      # =========================
+      # BUILD IMAGE
+      # =========================
+      - name: Build Docker Image
         run: |
           docker build \
-            -t lnpr-app:latest \
+            -t ${IMAGE_NAME}:${IMAGE_TAG} \
             -f lnpr/docker/Dockerfile \
             lnpr
 
-          docker tag lnpr-app:latest ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
-
-      # ----------------------------
-      # Push Image
-      # ----------------------------
-      - name: Push image to GHCR
+      # =========================
+      # PUSH IMAGE
+      # =========================
+      - name: Push Docker Image
         run: |
-          docker push ghcr.io/vateam0864-glitch/lnpr-cicd-template:latest
+          docker push ${IMAGE_NAME}:${IMAGE_TAG}
 
-      # ================= SERVER 1 =================
+      # =========================
+      # DEPLOY TO SERVER 1
+      # =========================
       - name: Deploy to Server 1
         if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
@@ -52,9 +58,14 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
           script: |
+            export IMAGE_NAME=${IMAGE_NAME}
+            export IMAGE_TAG=${IMAGE_TAG}
+            export CONTAINER_NAME=${CONTAINER_NAME}
             sudo bash /opt/deploy/deploy_app.sh
 
-      # ================= SERVER 2 =================
+      # =========================
+      # DEPLOY TO SERVER 2
+      # =========================
       - name: Deploy to Server 2
         if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
@@ -63,4 +74,7 @@ jobs:
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
           script: |
+            export IMAGE_NAME=${IMAGE_NAME}
+            export IMAGE_TAG=${IMAGE_TAG}
+            export CONTAINER_NAME=${CONTAINER_NAME}
             sudo bash /opt/deploy/deploy_app.sh
