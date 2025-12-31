@@ -14,6 +14,9 @@ jobs:
       TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
 
     steps:
+      # ----------------------------
+      # Checkout
+      # ----------------------------
       - name: Checkout code
         uses: actions/checkout@v3
 
@@ -26,6 +29,33 @@ jobs:
           chmod +x cv_package/build_package.sh
           ./cv_package/build_package.sh
           ls -lh cvpack_v1.tar.gz
+
+      # ============================
+      # SERVER 1 – Upload Package
+      # ============================
+      - name: Upload CV Package to Server 1
+        if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER1_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
+          source: "cvpack_v1.tar.gz"
+          target: "/opt/lnpr/"
+          overwrite: true
+
+      - name: Apply CV Package on Server 1
+        if: env.TARGET_SERVER == 'server1' || env.TARGET_SERVER == 'all'
+        uses: appleboy/ssh-action@v1.1.0
+        with:
+          host: ${{ secrets.SERVER1_IP }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY_SERVER1 }}
+          script: |
+            set -e
+            sudo chown -R ubuntu:ubuntu /opt/lnpr /opt/cvpack
+            sudo chmod -R 755 /opt/lnpr /opt/cvpack
+            sudo bash /opt/deploy/deploy_package.sh
 
       # ============================
       # SERVER 2 – Upload Package
@@ -41,9 +71,6 @@ jobs:
           target: "/opt/lnpr/"
           overwrite: true
 
-      # ============================
-      # SERVER 2 – Apply Package
-      # ============================
       - name: Apply CV Package on Server 2
         if: env.TARGET_SERVER == 'server2' || env.TARGET_SERVER == 'all'
         uses: appleboy/ssh-action@v1.1.0
@@ -53,9 +80,6 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY_SERVER2 }}
           script: |
             set -e
-            echo "Fixing permissions"
             sudo chown -R ubuntu:ubuntu /opt/lnpr /opt/cvpack
             sudo chmod -R 755 /opt/lnpr /opt/cvpack
-
-            echo "Running deploy_package.sh"
             sudo bash /opt/deploy/deploy_package.sh
