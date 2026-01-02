@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
 
     # =========================
-    # GLOBAL VARIABLES (TL WANTED THIS)
+    # GLOBAL VARIABLES ( WANTED THIS)
     # =========================
     env:
       TARGET_SERVER: ${{ secrets.TARGET_SERVER }}
